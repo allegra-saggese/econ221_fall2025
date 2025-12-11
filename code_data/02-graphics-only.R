@@ -27,7 +27,8 @@ ggplot() +
   labs(
     x = "Year",
     y = "Tax collected (millions USD)",
-    color = "FRED FED series"
+    color = "FRED FED series",
+    title = "California tax collection by source"
   ) +
   theme_minimal()
 
@@ -61,7 +62,6 @@ ggplot(pce_df, aes(x = year, y = CAPCE)) +
 
 ## plot PCE and GDP over time 
 ggplot() +
-  
   # ---- PCE ----
 geom_line(data = pce_df,
           aes(x = year, y = CAPCE, color = "PCE"),
@@ -80,25 +80,26 @@ geom_line(data = gdp_df_v2,
   
   # ---- Axes ----
 scale_y_continuous(
-  name = "PCE & GDP (millions USD)")
+  name = "Aggregate measure (millions USD)") + 
  # ---- Colors ----
 scale_color_manual(values = c(
-  "PCE" = "blue",
-  "GDP" = "red",
+  "PCE" = "purple",
+  "GDP" = "hotpink",
   "Unemployment Rate" = "darkgreen"
 )) +
   
   # ---- Labels ----
 labs(
   x = "Year",
-  color = "Series"
+  color = "Series",
+  title = "Descriptive Comparison: GDP vs. Aggregate PCE"
 ) +
-  
   theme_minimal()
+  
 
 ## PLOT - unemployment vs change in GDP / PCE 
 scale_factor <- max(df_merge$diff_pce_sales, na.rm = TRUE) / 
-  max(ur_yearly$urate_avg, na.rm = TRUE) # scale unemployment so it fits on left axis
+  max(ur_yearly$urate_avg, na.rm = TRUE) + # scale unemployment so it fits on left axis
 
 ggplot(df_merge, aes(x = year, y = diff_pce_sales)) +
   geom_line(color = "purple", size = 1.2) +
@@ -164,8 +165,14 @@ ggplot(merged_long_v1, aes(x = year, y = value / 1e6, color = source)) +
                      name = "Revenue (Millions of USD)") +
   scale_color_discrete(
     name = "",
-    labels = c("Estimated Revenue (PCE)", "Estimated Revenue (Trans)", "Revenue (FRED)", "Revenue (CATFA)")
+    labels = str_wrap(c("Estimated (county level PCE)", "Estimate (Transaction approach)",
+                        "Observed Revenue", "Observed Revenue (select consumer sectors)"), width = 15)
   ) +
+  theme(legend.key.width = unit(1, "cm"),
+        legend.spacing.y = unit(0.7, "cm"),
+        legend.key.height = unit(1, "cm")) +
+  labs(title = "Comparison of revenue estimates") +
+        
   theme_minimal()
 
 # add another filter 
@@ -196,12 +203,63 @@ map_df <- ca_counties %>%
     by = "GEOID"
   )
 
+# est tax spend
+ggplot(map_df) +
+  geom_sf(aes(fill = est_taxable_spend), color = "white", size = 0.2) +
+  scale_fill_viridis_c(
+    option = "plasma",
+    labels = scales::comma,
+    name = "Estimated tax base"
+  ) +
+  labs(
+    title = "Taxable spend (2023)",
+    caption = "Source: CDTFA / ACS"
+  ) +
+  theme_minimal() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank())
+
+map_df <- ca_counties %>%
+  left_join(
+    merged_df %>% filter(year == 2023),
+    by = "GEOID"
+  )
+
+# for PCE 
+ca_mappce <- map_df %>%
+  mutate(est_PCE_cty_agg_m = est_PCE_cty_agg / 1000000)
+
+ggplot(ca_mappce) +
+  geom_sf(aes(fill = est_PCE_cty_agg_m), color = "white", size = 0.2) +
+  scale_fill_viridis_c(
+    option = "plasma",
+    labels = scales::comma,
+    name = "County PCE (millions USD)"
+  ) +
+  labs(
+    title = "Quintile-based personal consumption expenditure (2023)",
+    caption = "Source: CDTFA / ACS"
+  ) +
+  theme_minimal() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank())
+
+map_df <- ca_counties %>%
+  left_join(
+    merged_df %>% filter(year == 2023),
+    by = "GEOID"
+  )
+
+
+## effective tax rate
 ggplot(map_df) +
   geom_sf(aes(fill = cty_rate), color = "white", size = 0.2) +
   scale_fill_viridis_c(
     option = "plasma",
     labels = scales::comma,
-    name = "Effective county tax rate (2015)"
+    name = "Effective county tax rate (2023)"
   ) +
   labs(
     title = "California Taxable Sales by County",
@@ -212,22 +270,45 @@ ggplot(map_df) +
         axis.ticks = element_blank(),
         panel.grid = element_blank())
 
-
+# median household income 
 ggplot(map_df) +
+  geom_sf(aes(fill = estimate), color = "white", size = 0.2) +
+  scale_fill_viridis_c(
+    option = "plasma",
+    labels = scales::comma,
+    name = "Median come (USD)"
+  ) +
+  labs(
+    title = "County-level median household income (2023)",
+    caption = "Source: Census ACS, 1-year and 5-year"
+  ) +
+  theme_minimal() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank())
+
+
+# est-tax-revenue
+map_df_rev <- map_df %>%
+  mutate(est_tax_rev = est_tax_rev/1000000)
+
+ggplot(map_df_rev) +
   geom_sf(aes(fill = est_tax_rev), color = "white", size = 0.2) +
   scale_fill_viridis_c(
     option = "plasma",
     labels = scales::comma,
-    name = "Taxable Revenue (USD)"
+    name = "Tax revenue (millions USD)"
   ) +
   labs(
-    title = "California Taxable Sales by County",
-    caption = "Source: CDTFA / ACS"
+    title = "County-level tax revenue estimate (2023)",
+    caption = "Source: Census ACS, FRED FED, CAFTD"
   ) +
   theme_minimal() +
   theme(axis.text = element_blank(),
         axis.ticks = element_blank(),
         panel.grid = element_blank())
+
+
 
 ## plot the final additional line - estimated state level CA PCE 
 state_level_est_plot <- state_level_est %>%
@@ -247,7 +328,7 @@ ggplot(state_level_est_plot, aes(x = year)) +
 
 ## plot simple state-level CAPCE approach from FRED FED data 
 # note this depends heavily on calculated incidence (aggregate) of what share of spending we think is taxable
-ggplot(state_level_est, aes(x = year, y = total_est_rev)) +
+ggplot(state_level_est, aes(x = year, y = est_tax_rev)) +
   geom_line() +
   geom_point() +
   labs(
@@ -257,20 +338,126 @@ ggplot(state_level_est, aes(x = year, y = total_est_rev)) +
   ) +
   theme_minimal()
 
-# plot difference (i.e. magnitudes)
+# plot difference (i.e. magnitudes) between actually recorded transaction and federal estimated taxes 
 state_level_est1 <- state_level_est %>%
   filter(year >= 2009)
 
-ggplot(state_level_est1, aes(x = year, y = (taxable_trans_total - revenue_FRED_source) / 1e6)) +
-  geom_line(color = "#D55E00", linewidth = 1.1) +
-  geom_point(color = "#D55E00", size = 2) +
+# create the shades for the recessionary periods 
+state_level_est1$year <- as.numeric(state_level_est1$year)
+# define shading periods explicitly for recessions - can use later in graphs 
+shades <- data.frame(
+  xmin = c(2009, 2020),
+  xmax = c(2010, 2022),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+# PLOT the differences 
+ggplot() +
+  # shaded blocks first
+  geom_rect(
+    data = shades,
+    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+    fill = "grey80", alpha = 0.4
+  ) +
+  # main data line + points
+  geom_line(
+    data = state_level_est1,
+    aes(x = year, y = (est_tax_rev - revenue_FRED_source) / 1e6),
+    color = "#D55E00", linewidth = 1.1
+  ) +
+  geom_point(
+    data = state_level_est1,
+    aes(x = year, y = (est_tax_rev - revenue_FRED_source) / 1e6),
+    color = "#D55E00", size = 2
+  ) +
+  geom_hline(yintercept = 0, color = "lavender", linewidth = 0.8) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_x_continuous(breaks = seq(2009, 2023, 2)) +
   labs(
     x = "Year",
-    y = "Difference (Millions of USD)",
-    title = "Total taxable transaction - Revenue collection"
+    y = "Difference (millions USD)",
+    title = "Estimated CPE-based revenue - actual revenue collection"
   ) +
-  scale_y_continuous(labels = scales::comma_format()) +
-  scale_x_continuous(breaks = seq(2009, 2023, 2), labels = as.character) +
+  theme_minimal()
+
+
+# PLOT for difference in millions 
+# base plot
+pce_max  <- max(merged_yearly$pce_estimate, na.rm = TRUE)
+rate_max <- max(merged_yearly$cty_rate, na.rm = TRUE)
+
+shadesx <- data.frame(
+  xmin = c(2008, 2020),
+  xmax = c(2010, 2021),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+ggplot() +
+  # shaded background blocks
+  geom_rect(
+    data = shadesx,
+    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+    fill = "grey90", alpha = 0.4
+  ) +
+  # PCE line (left axis)
+  geom_line(
+    data = merged_yearly,
+    aes(x = year, y = pce_estimate, color = "pce estimate"),
+    linewidth = 1.1
+  ) +
+  # effective rate line (right axis, rescaled)
+  geom_line(
+    data = merged_yearly,
+    aes(x = year, y = (cty_rate / rate_max) * pce_max, color = "effective rate"),
+    linewidth = 1.1
+  ) +
+  scale_y_continuous(
+    name = "pce estimate",
+    sec.axis = sec_axis(~ . / pce_max * rate_max, name = "effective rate")
+  ) +
+  scale_color_manual(
+    values = c("pce estimate" = "hotpink", "effective rate" = "royalblue"),
+    name = "series"
+  ) +
+  labs(
+    x = "year",
+    title = "Taxable share of PCE vs. Effective sales tax rate "
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.title.y.left  = element_text(color = "hotpink"),
+    axis.title.y.right = element_text(color = "royalblue")
+  )
+
+
+## plot gamma estimates 
+state_level_est_filtered <- state_level_est %>%
+  filter(year >= 2008) %>%
+  filter(year <= 2019)
+  
+gamma_long <-state_level_est_filtered %>%
+  select(year, gamma_t, gamma_tot_trans) %>%
+  pivot_longer(cols = starts_with("gamma"),
+               names_to = "version",
+               values_to = "gamma")
+
+# plot with line at 100% for full compliance
+ggplot(gamma_long, aes(x = year, y = gamma, color = version)) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.8) +  # 100% reference line
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 2) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_x_continuous(breaks = unique(gamma_long$year),
+                     labels = as.character(unique(gamma_long$year))) +
+  labs(
+    title = "Sales Tax Compliance Rate",
+    x = "Year",
+    y = "Compliance Rate",
+    color = expression("Estimated " * gamma)
+  ) +
   theme_minimal()
 
 
