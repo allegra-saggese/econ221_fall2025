@@ -1,0 +1,9 @@
+"dataset","column","min_year","max_year"
+"2024-CA-GDP-TOTAL","year",1997,2022
+"2024-CA-income-tax-by-zip","TaxYear",1992,2023
+"BLS_CES_tables_per_yr","...1",2017,2022
+"BLS-CES-by-quartile","Year",2017,2022
+"CA_Exports_Imports-onetable","year",2002,2023
+"CA-FED-taxable_sales_collected","Year",2005,2024
+"County_Expenditures_Per_Capita","Fiscal Year",2003,2023
+"NSAIMP-census-share-consumption-imports","Year",1992,2025
