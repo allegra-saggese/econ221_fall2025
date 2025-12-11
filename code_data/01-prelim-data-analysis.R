@@ -767,6 +767,71 @@ state_level_est <- left_join(annual_vals_for_state, pce_df %>% # note CAPCE is i
 state_level_est$total_est_rev_mills <- (state_level_est$incidence_avg*state_level_est$CAPCE)*state_level_est$eff_rate
 state_level_est$total_est_rev <- state_level_est$total_est_rev_mills*1000000
 
+# estimate taxable base at county level over time 
+merged_df %>%
+  group_by(year, quintile) %>%
+  summarise(est_tax_rev = (sum(est_tax_rev, na.rm = TRUE))/1000000, .groups = "drop") %>%
+  ggplot(aes(x = factor(year), y = est_tax_rev, fill = quintile)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  labs(
+    x = "Year",
+    y = "Estimated tax revenue (millions USD)",
+    title = "Stacked county-quintile estimated tax revenue by year",
+    fill = "Quintile bin"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+bars_df <- merged_df %>%
+  group_by(year, quintile) %>%
+  summarise(est_tax_rev = (sum(est_tax_rev, na.rm = TRUE))/1000000, .groups = "drop")
+
+line_df <- merged_df %>%
+  group_by(year) %>%
+  summarise(avg_rate = mean(cty_rate, na.rm = TRUE), .groups = "drop")
+
+# scaling constant so both fit visually
+scale_factor <- max(bars_df$est_tax_rev, na.rm = TRUE) / max(line_df$avg_rate, na.rm = TRUE)
+
+ggplot() +
+  # stacked bars (left axis)
+  geom_bar(
+    data = bars_df,
+    aes(x = factor(year), y = est_tax_rev, fill = quintile),
+    stat = "identity"
+  ) +
+  # line (right axis, rescaled)
+  geom_line(
+    data = line_df,
+    aes(x = factor(year), y = avg_rate * scale_factor, group = 1),
+    color = "grey", linewidth = 1
+  ) +
+  geom_point(
+    data = line_df,
+    aes(x = factor(year), y = avg_rate * scale_factor),
+    color = "grey", size = 2
+  ) +
+  # axes and labels
+  scale_y_continuous(
+    name = "Estimated tax revenue",
+    labels = scales::comma_format(),
+    sec.axis = sec_axis(~ . / scale_factor, name = "Average tax rate")
+  ) +
+  labs(
+    x = "Year",
+    title = "Quintile tax revenue (bars) and statewide average tax rate (line)",
+    fill = "Quintile"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+
 
 # -----------------------------------------------------------------------
 ###### ###### ###### ######  CALC FORMULA VALS  ###### ###### ###### ###### 
