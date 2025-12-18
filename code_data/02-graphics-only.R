@@ -460,9 +460,120 @@ ggplot(gamma_long, aes(x = year, y = gamma, color = version)) +
   ) +
   theme_minimal()
 
+### plot the unemployment rate against other vals 
+df_norm <-  bigdf %>%
+  mutate(
+    capce_n = as.numeric(scale(percap_taxable_total)),
+    gpd_n = as.numeric(scale(gdp_nominal_dollars)),
+    gva_n = as.numeric(scale(gva_t)),
+    gamma_trans_n = as.numeric(scale(gamma_tot_trans)), 
+    gamma_n = as.numeric(scale(gamma_t))
+  )
 
 
+df_norm_long <- pivot_longer(
+  df_norm,
+  cols = c(capce_n, gpd_n, gva_n, gamma_trans_n, gamma_n),
+  names_to = "series",
+  values_to = "value"
+)
+
+df_norm2 <- bigdf %>%
+  mutate(
+    capce_n = (percap_taxable_total - min(percap_taxable_total, na.rm = TRUE)) /
+      (max(percap_taxable_total, na.rm = TRUE) - min(percap_taxable_total, na.rm = TRUE)),
+    
+    gpd_n   = (gdp_nominal_dollars - min(gdp_nominal_dollars, na.rm = TRUE)) /
+      (max(gdp_nominal_dollars, na.rm = TRUE) - min(gdp_nominal_dollars, na.rm = TRUE)),
+    
+    gva_n   = (gva_t - min(gva_t, na.rm = TRUE)) /
+      (max(gva_t, na.rm = TRUE) - min(gva_t, na.rm = TRUE)),
+    
+    gamma_trans_n =
+      (gamma_tot_trans - min(gamma_tot_trans, na.rm = TRUE)) /
+      (max(gamma_tot_trans, na.rm = TRUE) - min(gamma_tot_trans, na.rm = TRUE)),
+    
+    gamma_n =
+      (gamma_t - min(gamma_t, na.rm = TRUE)) /
+      (max(gamma_t, na.rm = TRUE) - min(gamma_t, na.rm = TRUE)),
+    
+    urate_n =
+      (urate_avg - min(urate_avg, na.rm = TRUE)) /
+      (max(urate_avg, na.rm = TRUE) - min(urate_avg, na.rm = TRUE))
+  )
+
+df_norm_long2 <- df_norm2 %>%
+  pivot_longer(
+    cols = c(capce_n, gpd_n, gva_n, gamma_n, urate_n),
+    names_to = "series",
+    values_to = "value"
+  )
+
+# RAW PLOT - normalized outcome vars 
+ggplot(df_norm_long2, aes(x = year, y = value, color = series)) +
+  geom_line(size = 1) +
+  labs(
+    x = "Year",
+    y = "Normalized value (min–max)",
+    color = ""
+  ) +
+  theme_minimal()
 
 
-
-
+# VARPLOT w/ recessions and emphasis on GAMMA and UNEMP RATE
+ggplot(df_norm_long2, aes(x = year, y = value)) +
+  
+  # recession / shock bands
+  annotate(
+    "rect",
+    xmin = 2008, xmax = 2010,
+    ymin = -Inf, ymax = Inf,
+    fill = "grey90", alpha = 0.25
+  ) +
+  annotate(
+    "rect",
+    xmin = 2020, xmax = 2022,
+    ymin = -Inf, ymax = Inf,
+    fill = "grey90", alpha = 0.25
+  ) +
+  
+  # time series
+  geom_line(
+    aes(
+      color = series,
+      linetype = series,
+      size = series
+    ),
+    na.rm = TRUE
+  ) +
+  
+  # linetypes: default solid, urate dotted
+  scale_linetype_manual(
+    values = c(
+      "capce_n" = "solid",
+      "gpd_n"   = "solid",
+      "gva_n"   = "solid",
+      "gamma_n" = "solid",
+      "urate_n" = "dotted"
+    ),
+    guide = "none"
+  ) +
+  
+  # sizes: default 1, gamma emphasized, urate slightly thicker
+  scale_size_manual(
+    values = c(
+      "capce_n" = 1,
+      "gpd_n"   = 1,
+      "gva_n"   = 1,
+      "gamma_n" = 2.2,
+      "urate_n" = 1.4
+    ),
+    guide = "none"
+  ) +
+  
+  labs(
+    x = "Year",
+    y = "Normalized value (min–max)",
+    color = ""
+  ) +
+  theme_minimal()

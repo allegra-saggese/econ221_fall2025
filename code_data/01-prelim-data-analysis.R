@@ -813,7 +813,7 @@ ggplot() +
   geom_point(
     data = line_df,
     aes(x = factor(year), y = avg_rate * scale_factor),
-    color = "grey", size = 2
+    color = "black", size = 2
   ) +
   # axes and labels
   scale_y_continuous(
