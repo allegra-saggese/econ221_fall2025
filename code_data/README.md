@@ -58,25 +58,10 @@ Final paper copy with date and attached version.
 - `z-archive/`: old versions, scratch, deprecated code
 
 
-## How to run 
-- Requires R, RStudio 
-- Open the project by launching `econ221_fall2025.Rproj` in RStudio 
-- Run `01-prelim-data-analysis.R` first. This script automatically sources `00-startup.R` 
-and executes the full data construction pipeline, including loading inputs and building
-the California synthetic tax base at both the county and aggregate level. 
-The only required change is to update the local file path pointing to the inputs directory.
-- Modify the following line in `01-prelim-data-analysis.R` to match your local setup:
+## How to run
 
-`owd <- getwd()`
-# if current folder is not `'code_data',` move into it
-`if (basename(owd) != "code_data")` `{`
-  `target <- file.path(owd, "code_data")`
-  `if (!dir.exists(target)) stop("Missing 'code_data' inside: ", owd)`
-  `setwd(target)`
-`}`
-    
-- Replace `code_data` with your local folder if needed. 
-- Open `02-graphics-only.R`.
-	•	This script reads the outputs created in Step 2 and generates all final visualizations
-	•	Figures are saved to output-figs/ and are ready for use in the paper and presentations 
+Requires R (4.x) and RStudio; packages are loaded in `00-startup.R` and the scripts.
 
+1. Open `econ221_fall2025.Rproj` in RStudio. This sets the working directory to the project root.
+2. Run `01-prelim-data-analysis.R`. It sources `00-startup.R`, loads `inputs/`, and builds the California synthetic tax base at county and state level, writing `00_column_dictionary.csv`, `00_year_ranges.csv` and the merged county tax base `cty-level-estimated-taxbase.csv` to `output-tables/`. It expects to run from `code_data/`; if the working directory is the project root, it changes into `code_data/` automatically (and stops with an error if that folder is missing).
+3. Run `02-graphics-only.R`. It sources `00-startup.R` and `01-prelim-data-analysis.R` itself (so step 2 need not be run separately) and then draws the figures.
