@@ -1,4 +1,6 @@
-# ECON 221A (Fall 2025) — informality project
+# ECON 221A (Fall 2025)
+## Course materials: includes short code run for problem sets of economic slack course - macroeconomics, matching functions
+## Core output: draft paper studying the measurement of informal activity in CA
 
 Builds a California **synthetic sales tax base** at county and state level from observed taxable activity, county income-consumption proxies and tax rates, then compares it with collected revenue. The gap is the missing revenue consistent with consumption-tax noncompliance, or more broadly informality.
 
